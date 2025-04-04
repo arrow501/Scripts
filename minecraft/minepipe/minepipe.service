@@ -1,0 +1,71 @@
+# MinePipe - Minecraft Server Systemd Service
+# Version 1.0.0
+# 
+# MIT-0 License
+# 
+# Copyright (c) 2025 Arrow
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+# Instructions:
+# 1. Copy this file to /etc/systemd/system/minepipe.service
+# 2. Edit the variables below to match your setup
+# 3. Run: sudo systemctl daemon-reload
+# 4. Enable automatic startup: sudo systemctl enable minepipe
+# 5. Start the server: sudo systemctl start minepipe
+# 6. Check status: sudo systemctl status minepipe
+
+[Unit]
+Description=MinePipe Minecraft Server
+After=network.target
+
+[Service]
+# Change these variables to match your setup
+# USER: The Linux user that will run the Minecraft server
+# GROUP: The Linux group for the user
+# SERVER_DIR: Full path to the Minecraft server directory
+# START_SCRIPT: The script or command that starts the Minecraft server
+# CONSOLE_PIPE: Path to the named pipe used for console input
+User=minecraft
+Group=minecraft
+Environment="SERVER_DIR=/opt/minecraft"
+Environment="START_SCRIPT=server.sh"
+Environment="CONSOLE_PIPE=console-input"
+
+# Working directory
+WorkingDirectory=${SERVER_DIR}
+
+# Create and use a named pipe for input
+ExecStartPre=/bin/bash -c 'mkdir -p ${SERVER_DIR} && mkfifo ${SERVER_DIR}/${CONSOLE_PIPE}'
+ExecStart=/bin/bash -c 'tail -f ${SERVER_DIR}/${CONSOLE_PIPE} | ${SERVER_DIR}/${START_SCRIPT}'
+
+# Safe shutdown: Send 'save-all' and 'stop' commands before stopping
+ExecStop=/bin/bash -c 'echo "save-all" > ${SERVER_DIR}/${CONSOLE_PIPE} && sleep 10 && echo "stop" > ${SERVER_DIR}/${CONSOLE_PIPE} && sleep 30'
+ExecStopPost=/bin/rm -f ${SERVER_DIR}/${CONSOLE_PIPE}
+
+# Output handling
+StandardOutput=journal
+StandardError=journal
+
+# Restart settings
+Restart=on-failure
+RestartSec=60
+
+# Give the server time to shut down
+TimeoutStopSec=90
+
+[Install]
+WantedBy=multi-user.target
