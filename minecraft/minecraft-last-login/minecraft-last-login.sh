@@ -2,7 +2,7 @@
 # minecraft-last-login - Find latest login times for Minecraft server players
 # Version 1.0.0
 # 
-# MIT License (Zeroth Clause)
+# MIT-0 License 
 # 
 # Copyright (c) 2025
 # 
